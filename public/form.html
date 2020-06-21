@@ -1,0 +1,49 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <!-- 安全隐患 任何人都可以访问我的服务器  egg 做一个隐藏域 -->
+    <!-- a=1&b=2 post  前端发送的是一个ajax {} -->
+    <pre>
+      1.实现一个http请求，客户端会发送get,post,put,delete请求，但form表单只支持get，post请求
+      2.要处理不同请求体的类型(表单格式 a=1 & b=2 formData) json格式 
+      3.ajax跨域问题，提交数据 表单支持直接跨域请求
+    </pre>
+    <form action="http://localhost:3000/login" method="POST">
+        <input type="text" name="username">
+        <input type="text" name="password">
+        <button type="submit">提交</button>
+    </form>
+    <button id="btn">注册提交数据</button>
+    <script>
+        // ajax 4步曲  1.创建xhr对象 2.开启请求  3.发送请求 4.监听状态变化
+        // fetch
+
+        // ajax 只能在http服务下进行发送 否则会导致跨域问题
+
+        // 默认如果 域名、 端口号、协议不一致 会有跨域问题 
+        btn.addEventListener('click', function () {
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', 'http://localhost:3000/reg', true); // 异步提交
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.responseType = 'json'; // 浏览器自动将相应的结果转化成对象
+            xhr.send(JSON.stringify({
+                name: 'zf'
+            }))
+            xhr.onload = function () { // xhr.readyState == 4 xhr.status == 200
+                console.log(typeof xhr.response)
+            }
+        });
+    </script>
+
+</body>
+
+</html>
