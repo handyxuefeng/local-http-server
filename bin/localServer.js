@@ -3,7 +3,6 @@
 const program = require("commander");
 const package = require("../package.json");
 const config = require("./config");
-
 const Server = require("../src/server");  //导入创建好的Server模块
 
 program.usage("[args]");

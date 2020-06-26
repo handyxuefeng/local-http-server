@@ -102,8 +102,7 @@ class Server {
   async sendFileToClient(req, res, filepath, statObj) {
     //如果是个文件的话，则直接输出
     let fileType = mime.getType(filepath); //得到文件类型
-    //console.log("请求的文件类型为:fileType = ", fileType);
-
+   
     //1.缓存处理
     try {
       let cache = await this.cache(req, res, filepath, statObj);
@@ -115,10 +114,33 @@ class Server {
       this.sendError(req, res, error);
     }
 
-    //2.判断一下浏览器是否支持gzip压缩
+    //2.防盗链处理
+    let referer = req.headers["referer"] || req.headers["referrer"];
+    let refererHost = '';
+    let pictureHost = req.headers['host'];
+    //针对图片做防盗链
+    if(/\.jpe?g|png/g.test(req.url)){
+      if (referer) {
+        //如果有referer,则再获取改
+        refererHost = url.parse(referer).host;
+        if(pictureHost!=refererHost){
+          console.log(
+            "图片的host和引用图片的refer不一致,pictureHost",
+            pictureHost,
+            "refererHost = ",
+            refererHost
+          );
+          return createReadStream(path.resolve(__dirname,'404.jpg')).pipe(res);
+        }
+      }
+    }
+    
+
+
+    //3.判断一下浏览器是否支持gzip压缩
     let gzip = this.gzip(req, res);
     if (gzip) {
-      res.setHeader("Conent-Type", fileType + ";charset=utf-8"); //在响应头里面设置文件的相应类型
+      res.setHeader("Conent-Type", fileType); //在响应头里面设置文件的相应类型
       createReadStream(filepath).pipe(gzip).pipe(res);
     } else {
       createReadStream(filepath).pipe(res); //通过pipe管道，边读边输出
@@ -132,12 +154,7 @@ class Server {
    */
   initHttpRequestConfig(req, res) {
     // cors  允许跨域 允许携带header
-    console.log(
-      "method= ",
-      req.method,
-      "请求来源= headers.origin",
-      req.headers.origin || "*"
-    );
+    //console.log("method= ", req.method, "请求来源= headers.origin",req.headers.origin || "*" );
     // 1) 配置跨域 当前请求我的源是谁
     res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*"); // 我允许你 任何网站来访问我
     //2.默认支持 get 和 post  新增哪些方法可以访问
@@ -152,8 +169,6 @@ class Server {
    * @param {*} res
    */
   async httpHandler(req, res) {
-    console.log("1. 开始处理请求——httpHandler");
-
     this.initHttpRequestConfig(req, res);
 
     let filepath = "";
@@ -166,6 +181,8 @@ class Server {
     */
     pathname = decodeURIComponent(pathname); // 将中文进行一次转义
     filepath = path.join(this.directory, pathname);
+
+    
 
     try {
       let statObj = await fs.stat(filepath);
