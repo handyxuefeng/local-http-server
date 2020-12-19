@@ -36,5 +36,5 @@ console.log("resultConfig", resultConfig);
 
 //  创建Server实列
 let httServer = new Server(resultConfig);
-    httServer.start();
- 
+httServer.start();
+

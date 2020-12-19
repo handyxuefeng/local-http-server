@@ -102,7 +102,7 @@ class Server {
   async sendFileToClient(req, res, filepath, statObj) {
     //如果是个文件的话，则直接输出
     let fileType = mime.getType(filepath); //得到文件类型
-   
+
     //1.缓存处理
     try {
       let cache = await this.cache(req, res, filepath, statObj);
@@ -119,28 +119,30 @@ class Server {
     let refererHost = '';
     let pictureHost = req.headers['host'];
     //针对图片做防盗链
-    if(/\.jpe?g|png/g.test(req.url)){
+    if (/\.jpe?g|png/g.test(req.url)) {
       if (referer) {
         //如果有referer,则再获取改
         refererHost = url.parse(referer).host;
-        if(pictureHost!=refererHost){
+        if (pictureHost != refererHost) {
           console.log(
             "图片的host和引用图片的refer不一致,pictureHost",
             pictureHost,
             "refererHost = ",
             refererHost
           );
-          return createReadStream(path.resolve(__dirname,'404.jpg')).pipe(res);
+          return createReadStream(path.resolve(__dirname, '404.jpg')).pipe(res);
         }
       }
     }
-    
+
 
 
     //3.判断一下浏览器是否支持gzip压缩
     let gzip = this.gzip(req, res);
+    res.setHeader("Content-Type", `${fileType};charset=utf-8`);
     if (gzip) {
-      res.setHeader("Conent-Type", fileType); //在响应头里面设置文件的相应类型
+      //res.setHeader("Conent-Type", fileType); //在响应头里面设置文件的相应类型
+
       createReadStream(filepath).pipe(gzip).pipe(res);
     } else {
       createReadStream(filepath).pipe(res); //通过pipe管道，边读边输出
@@ -182,7 +184,7 @@ class Server {
     pathname = decodeURIComponent(pathname); // 将中文进行一次转义
     filepath = path.join(this.directory, pathname);
 
-    
+
 
     try {
       let statObj = await fs.stat(filepath);
@@ -320,9 +322,8 @@ class Server {
       return "`;" + arguments[1] + ";str+=`";
     });
     let tail = "`";
-    let executorStr = `let str=''; with(parseObj){${
-      head + htmlTemplate + tail
-    }};return str;`; //通过with固定好作用域
+    let executorStr = `let str=''; with(parseObj){${head + htmlTemplate + tail
+      }};return str;`; //通过with固定好作用域
     let fn = new Function("parseObj", executorStr);
 
     //console.log(fn.toString()); 把匿名函数打印出来
