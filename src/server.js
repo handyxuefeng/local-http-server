@@ -63,7 +63,11 @@ class Server {
     let ifModifiedSince = req.headers["if-modified-since"];
     let lastModified = statObj.ctime.toGMTString();
 
+    res.setHeader("Expires", new Date(Date.now() + 10 * 1000).toGMTString()); //设置强缓存
+    res.setHeader("Cache-Control", "max-age=10"); //设置强缓存，相对时间
 
+    res.setHeader("Last-Modified", lastModified);
+    res.setHeader("Etag", etage);
 
     //配对使用
     if (ifNoneMatch !== etage) {
@@ -98,9 +102,7 @@ class Server {
   async sendFileToClient(req, res, filepath, statObj) {
     //如果是个文件的话，则直接输出
     let fileType = mime.getType(filepath); //得到文件类型
-    let lastModified = statObj.ctime.toGMTString();
-    let fileContent = await fs.readFile(filepath); //获取文件内容,用于生成内容hash
-    let etage = crypto.createHash("md5").update(fileContent).digest("base64");
+
     //1.缓存处理
     try {
       let cache = await this.cache(req, res, filepath, statObj);
@@ -137,11 +139,8 @@ class Server {
 
     //3.判断一下浏览器是否支持gzip压缩
     let gzip = this.gzip(req, res);
-    res.setHeader("Last-Modified", lastModified);
-    res.setHeader("Etag", etage);
-    res.setHeader("Content-Type", `${fileType};charset=utf-8`);
+    res.setHeader("Content-Type", `${fileType};charset=utf-8`); //在响应头里面设置文件的相应类型
     if (gzip) {
-      //res.setHeader("Conent-Type", fileType); //在响应头里面设置文件的相应类型
       createReadStream(filepath).pipe(gzip).pipe(res);
     } else {
       createReadStream(filepath).pipe(res); //通过pipe管道，边读边输出
@@ -183,8 +182,7 @@ class Server {
     pathname = decodeURIComponent(pathname); // 将中文进行一次转义
     filepath = path.join(this.directory, pathname);
 
-    res.setHeader("Expires", new Date(Date.now() + 10 * 1000).toGMTString()); //设置强缓存
-    res.setHeader("Cache-Control", "max-age=10"); //设置强缓存，相对时间
+
 
     try {
       let statObj = await fs.stat(filepath);
